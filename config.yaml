@@ -1,0 +1,6 @@
+server: 
+  port: 8081
+  
+db: 
+  type: mysql
+  dsn: 
