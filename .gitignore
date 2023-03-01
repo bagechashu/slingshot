@@ -19,3 +19,7 @@
 
 # air tmpl files
 /tmp
+
+# templates tmp
+templates/assets
+templates/templates

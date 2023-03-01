@@ -5,6 +5,7 @@ import (
 
 	"slingshot/app"
 	"slingshot/config"
+	"slingshot/templates"
 
 	"github.com/labstack/echo/v4"
 	"github.com/liushuochen/gotable"
@@ -15,6 +16,7 @@ var E *echo.Echo
 
 func init() {
 	E = echo.New()
+	E.Renderer = templates.HTMLRender
 	app.InitRoutes(E)
 }
 

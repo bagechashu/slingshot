@@ -10,7 +10,7 @@ import (
 
 type cfg struct {
 	Server
-	DB
+	Database
 }
 
 var Cfg = new(cfg)

@@ -1,12 +1,9 @@
 package config
 
-type dbType string
-
-const (
-	Sqlite dbType = "sqlite3"
-)
-
-type DB struct {
-	Type dbType
-	Dsn  string
+type Database struct {
+	User     string
+	Password string
+	Host     string
+	Port     int
+	Name     string
 }
