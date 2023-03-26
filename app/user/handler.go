@@ -1,6 +1,7 @@
 package user
 
 import (
+	"log"
 	"net/http"
 	"slingshot/db"
 
@@ -27,7 +28,10 @@ func getUser(c echo.Context) error {
 func addUser(c echo.Context) error {
 	db := db.DB()
 	user := User{}
-	c.Bind(&user)
+	if err := c.Bind(&user); err != nil {
+		return err
+	}
+	log.Printf("user: %v", user)
 	db.Create(&user)
 	return c.JSON(http.StatusOK, user)
 }
