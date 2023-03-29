@@ -2,32 +2,19 @@ package db
 
 import (
 	"fmt"
-	"log"
 	"slingshot/config"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
-var (
-	db *gorm.DB
-)
+var DB *gorm.DB
 
-func Init() (db *gorm.DB) {
-	log.Printf("Connecting to database: %s", config.Cfg.Database.DSN())
-	db, err := gorm.Open(mysql.Open(config.Cfg.Database.DSN()), &gorm.Config{})
+func InitMysql() {
+	// log.Printf("database Dsn: %s", config.Cfg.Database.DSN())
+	var err error
+	DB, err = gorm.Open(mysql.Open(config.Cfg.Database.DSN()), &gorm.Config{})
 	if err != nil {
-		fmt.Println("Connection to database failed", err)
-		panic(err)
-	} else {
-		fmt.Println("Connected to database")
+		fmt.Println("db init failed: ", err.Error())
 	}
-	return
-}
-
-func DB() *gorm.DB {
-	if db == nil {
-		db = Init()
-	}
-	return db
 }

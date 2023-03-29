@@ -17,9 +17,17 @@ type User struct {
 	Status   int    `json:"status" form:"status" gorm:"index;default:0;"`
 }
 
+func (User) TableName() string {
+	return "sys_users"
+}
+
 type Role struct {
 	gorm.Model
 	Name string `json:"name" form:"name" query:"name" gorm:"size:64;uniqueIndex;default:'';not null;"`
+}
+
+func (Role) TableName() string {
+	return "sys_roles"
 }
 
 type UserRole struct {
@@ -28,9 +36,12 @@ type UserRole struct {
 	RoleID uint `json:"role_id" form:"role_id" query:"role_id" gorm:"index;default:0;"`
 }
 
+func (UserRole) TableName() string {
+	return "sys_user_roles"
+}
+
 func Migrate() {
-	db := db.DB()
-	db.AutoMigrate(&User{})
-	db.AutoMigrate(&Role{})
-	db.AutoMigrate(&gormadapter.CasbinRule{})
+	db.DB.AutoMigrate(&User{})
+	db.DB.AutoMigrate(&Role{})
+	db.DB.AutoMigrate(&gormadapter.CasbinRule{})
 }

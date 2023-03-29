@@ -22,3 +22,11 @@ func (db Database) DSN() string {
 		db.Name,
 		db.Param)
 }
+
+func (db Database) DSNWithoutAccount() string {
+	return fmt.Sprintf("tcp(%s:%d)/%s?%s",
+		db.Host,
+		db.Port,
+		db.Name,
+		db.Param)
+}

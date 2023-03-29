@@ -9,7 +9,7 @@ import (
 )
 
 func NewAdapter() (*gormadapter.Adapter, error) {
-	if ga, err := gormadapter.NewAdapterByDB(db.DB()); err != nil {
+	if ga, err := gormadapter.NewAdapterByDB(db.DB); err != nil {
 		return nil, err
 	} else {
 		return ga, nil
