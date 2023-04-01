@@ -1,48 +1,51 @@
 package middleware
 
 import (
-	"slingshot/db"
+	"fmt"
+	"log"
+	"net/http"
+	"os/user"
 
 	"github.com/casbin/casbin/v2"
-	"github.com/casbin/casbin/v2/model"
-	gormadapter "github.com/casbin/gorm-adapter/v3"
+	xormadapter "github.com/casbin/xorm-adapter/v2"
+	"github.com/labstack/echo/v4"
 )
 
-func NewAdapter() (*gormadapter.Adapter, error) {
-	if ga, err := gormadapter.NewAdapterByDB(db.DB); err != nil {
-		return nil, err
-	} else {
-		return ga, nil
+var (
+	casbinAdapter  *xormadapter.Adapter
+	CasbinEnforcer *casbin.Enforcer
+)
+
+func CheckPermission() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			obj := c.Request().URL.RequestURI()
+			act := c.Request().Method
+			var u user.User
+			log.Printf("========================")
+			if err := c.Bind(&u); err != nil {
+				log.Printf("user bind in casbin err: %v", err)
+			}
+			sub := u.Username
+			log.Printf("sub: %v, obj: %v, act: %v", sub, obj, act)
+			log.Printf("========================")
+
+			if ok, _ := CasbinEnforcer.Enforce(sub, obj, act); !ok {
+				return c.HTML(http.StatusForbidden, "no permission")
+			}
+			return next(c)
+		}
 	}
 }
 
-// Construction function
-func NewEnforcer(modelString string, adapter gormadapter.Adapter) (*casbin.Enforcer, error) {
-	m, err := loadModelFromString(modelString)
+func init() {
+	var err error
+	casbinAdapter, err = xormadapter.NewAdapter("mysql", "root:123456@tcp(127.0.0.1:3306)/demo?charset=utf8mb4", true)
 	if err != nil {
-		return nil, err
+		fmt.Printf("casbinAdapter err: %v", err)
 	}
-	e, err := casbin.NewEnforcer(m, adapter)
+	CasbinEnforcer, err = casbin.NewEnforcer("./rbac_models.conf", casbinAdapter)
 	if err != nil {
-		return nil, err
+		fmt.Printf("CasbinEnforcer err: %v", err)
 	}
-	return e, nil
-}
-
-// func loadModelFromString(modelString string) (model.Model, error) {
-// 	m, err := model.NewModelFromString(modelString)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return m, nil
-// }
-
-func loadModelFromString(modelString string) (model.Model, error) {
-	m := model.NewModel()
-	err := m.LoadModelFromText(string(modelString))
-	if err != nil {
-		return nil, err
-	}
-	return m, nil
 }

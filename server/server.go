@@ -8,13 +8,14 @@ import (
 	"os/signal"
 	"slingshot/app"
 	"slingshot/db"
-	"slingshot/middleware"
+	mw "slingshot/middleware"
 	"slingshot/templates"
 	"time"
 
-	"github.com/labstack/echo/v4"
-
 	"github.com/go-playground/validator/v10"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/liushuochen/gotable"
 	"github.com/spf13/cobra"
@@ -29,21 +30,24 @@ type slingshot struct {
 	Validate    *validator.Validate
 }
 
+var E *echo.Echo
+
 var s = &slingshot{}
 
 func globalVarInit() {
 	db.InitMysql()
-	middleware.RBAC.Init()
+	s.Mode = "debug"
+	// e.LoadPolicy()
+	E = echo.New()
+	E.Use(middleware.Logger())
+	E.Use(middleware.Recover())
 
-	s.Server = echo.New()
-	s.Server.Renderer = templates.HTMLRender
+	E.Use(mw.CheckPermission())
+	E.Renderer = templates.HTMLRender
 }
 
 func registerMiddleware() {
-
-	s.Server.Use(middleware.RBAC.Middleware())
-
-	app.InitRoutes(s.Server)
+	app.InitRoutes(E)
 }
 
 func Run(cmd *cobra.Command, args []string) {
@@ -52,12 +56,12 @@ func Run(cmd *cobra.Command, args []string) {
 	// E.Logger.Fatal(E.Start(fmt.Sprintf(":%d", config.Cfg.Server.Port)))
 
 	// Setup
-	s.Server.Logger.SetLevel(log.INFO)
+	E.Logger.SetLevel(log.INFO)
 
 	// Start server
 	go func() {
-		if err := s.Server.Start(":1323"); err != nil && err != http.ErrServerClosed {
-			s.Server.Logger.Fatal("shutting down the server")
+		if err := E.Start(":1323"); err != nil && err != http.ErrServerClosed {
+			E.Logger.Fatal("shutting down the server")
 		}
 	}()
 
@@ -68,8 +72,8 @@ func Run(cmd *cobra.Command, args []string) {
 	<-quit
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := s.Server.Shutdown(ctx); err != nil {
-		s.Server.Logger.Fatal(err)
+	if err := E.Shutdown(ctx); err != nil {
+		E.Logger.Fatal(err)
 	}
 }
 
@@ -88,7 +92,7 @@ func WalkRoutes(cmd *cobra.Command, args []string) {
 	table.Align("Path", 1)
 	table.Align("Name", 1)
 
-	for _, r := range s.Server.Routes() {
+	for _, r := range E.Routes() {
 		table.AddRow([]string{r.Method, r.Path, r.Name})
 		// fmt.Printf("%+v", row)
 	}
