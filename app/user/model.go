@@ -41,7 +41,7 @@ func (UserRole) TableName() string {
 }
 
 func Migrate() {
-	db.DB.AutoMigrate(&User{})
-	db.DB.AutoMigrate(&Role{})
-	db.DB.AutoMigrate(&gormadapter.CasbinRule{})
+	db.DB.Sync(&User{})
+	db.DB.Sync(&Role{})
+	db.DB.Sync(&gormadapter.CasbinRule{})
 }

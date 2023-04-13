@@ -36,6 +36,9 @@ var s = &slingshot{}
 
 func globalVarInit() {
 	db.InitMysql()
+	mw.InitRbac()
+
+	mw.Rbac.Enforcer.AddPolicy("slingshot", "user", "write")
 	s.Mode = "debug"
 	// e.LoadPolicy()
 	E = echo.New()
