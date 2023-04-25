@@ -47,7 +47,12 @@ func CheckPermission() echo.MiddlewareFunc {
 func InitRbac() {
 	Rbac.once.Do(func() {
 		var err error
-		Rbac.adapter, err = xormadapter.NewAdapterWithTableName("mysql", config.Cfg.Database.DSN(), "casbin_rule", "sys_", true)
+		Rbac.adapter, err = xormadapter.NewAdapterWithTableName(
+			"mysql",
+			config.Cfg.Database.DSN(),
+			"casbin_rule",
+			"sys_",
+			true)
 		if err != nil {
 			fmt.Printf("adapter err: %v", err)
 		}

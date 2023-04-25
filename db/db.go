@@ -22,6 +22,11 @@ func InitMysql() {
 		if err != nil {
 			fmt.Println("db init failed: ", err.Error())
 		}
+		// TODO: XORM Debug logging
+		DB.ShowSQL(true)
+		DB.SetLogLevel(xormlog.LOG_DEBUG)
 		DB.SetLogger(xormlog.NewSimpleLogger(os.Stdout))
 	})
 }
+
+// TODO: Export DB by Function. Don't export DB directly.

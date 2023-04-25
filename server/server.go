@@ -34,7 +34,7 @@ var E *echo.Echo
 
 var s = &slingshot{}
 
-func globalVarInit() {
+func setup() {
 	db.InitMysql()
 	mw.InitRbac()
 
@@ -45,17 +45,16 @@ func globalVarInit() {
 	E.Use(middleware.Logger())
 	E.Use(middleware.Recover())
 
-	E.Use(mw.CheckPermission())
+	// E.Use(mw.CheckPermission())
 	E.Renderer = templates.HTMLRender
 }
 
-func registerMiddleware() {
-	app.InitRoutes(E)
+func Setup(cmd *cobra.Command, args []string) {
+	setup()
 }
 
 func Run(cmd *cobra.Command, args []string) {
-	globalVarInit()
-	registerMiddleware()
+	app.InitRoutes(E)
 	// E.Logger.Fatal(E.Start(fmt.Sprintf(":%d", config.Cfg.Server.Port)))
 
 	// Setup

@@ -13,10 +13,11 @@ var serverCmd = &cobra.Command{
 }
 
 var runCmd = &cobra.Command{
-	Use:   "run",
-	Short: "start server",
-	Long:  `start server`,
-	Run:   server.Run,
+	Use:    "run",
+	Short:  "start server",
+	Long:   `start server`,
+	PreRun: server.Setup,
+	Run:    server.Run,
 }
 
 var walkCmd = &cobra.Command{

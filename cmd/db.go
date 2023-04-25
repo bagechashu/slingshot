@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"slingshot/app"
+	"slingshot/server"
 
 	"github.com/spf13/cobra"
 )
@@ -13,10 +14,11 @@ var dbCmd = &cobra.Command{
 }
 
 var migrateCmd = &cobra.Command{
-	Use:   "migrate",
-	Short: "migrate",
-	Long:  `migrate`,
-	Run:   app.AppMigrate,
+	Use:    "migrate",
+	Short:  "migrate",
+	Long:   `migrate`,
+	PreRun: server.Setup,
+	Run:    app.AppMigrate,
 }
 
 func init() {
