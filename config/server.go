@@ -8,4 +8,5 @@ type Server struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 	IdleTimeout  time.Duration
+	JwtSecretKey string
 }

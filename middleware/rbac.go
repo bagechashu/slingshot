@@ -44,6 +44,7 @@ func CheckPermission() echo.MiddlewareFunc {
 	}
 }
 
+// TODO: Enforcer model use const RBAC_MODEL
 func InitRbac() {
 	Rbac.once.Do(func() {
 		var err error

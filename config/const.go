@@ -1,6 +1,7 @@
 package config
 
-const RBAC_MODEL = `
+const (
+	RBAC_MODEL = `
 [request_definition]
 r = sub, obj, act
 
@@ -19,3 +20,4 @@ m = g(r.sub, p.sub) == true \
     && regexMatch(r.act, p.act) == true \
     || r.sub == "9"
 `
+)
