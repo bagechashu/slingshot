@@ -6,8 +6,8 @@ import (
 
 // TODO: UserID snowflake
 type User struct {
-	Id        int64  `json:"id" form:"id" param:"id" xorm:"autoincr index"`
-	UserId    int64  `json:"user_id" form:"user_id" param:"user_id" xorm:"index"`
+	Id        int64  `json:"id" form:"id" param:"id"` // can't add xorm tag, because it's primary key
+	Uid       string `json:"uid" form:"uid" param:"uid" xorm:"index"`
 	Username  string `json:"username" form:"username" xorm:"varchar(64) unique notnull default('') index 'username'"`
 	Nickname  string `json:"nickname" form:"nickname" xorm:"varchar(64) index default('')"`
 	Password  string `json:"password" form:"password" xorm:"varchar(40) default('')"`
@@ -17,8 +17,6 @@ type User struct {
 	CreatedAt int64  `json:"created_at" xorm:"created"`
 	UpdatedAt int64  `json:"updated_at" xorm:"updated"`
 	DeletedAt int64  `json:"deleted_at" xorm:"deleted"`
-
-	Roles []Role `json:"roles" xorm:"-"`
 }
 
 func (User) TableName() string {
@@ -32,22 +30,17 @@ func (u *User) Add() (int64, error) {
 
 // Update user
 func (u *User) Update() (int64, error) {
-	return db.DB.Where("id = ?", u.Id).Update(u)
+	return db.DB.Where("uid = ?", u.Uid).Update(u)
 }
 
 // Delete user
 func (u *User) Delete() (int64, error) {
-	return db.DB.Where("id = ?", u.Id).Delete(u)
+	return db.DB.Where("uid = ?", u.Uid).Delete(u)
 }
 
 // Get user
 func (u *User) Get() (bool, error) {
-	return db.DB.Where("id = ?", u.Id).Get(u)
-}
-
-// Get user's all roles
-func (u *User) GetRoles() error {
-	return db.DB.Table("sys_roles").Join("INNER", "sys_user_roles", "sys_roles.id = sys_user_roles.role_id").Where("sys_user_roles.user_id = ?", u.Id).Find(&u.Roles)
+	return db.DB.Where("uid = ?", u.Uid).Get(u)
 }
 
 // Get users
@@ -56,13 +49,12 @@ func GetUsers(users *[]User) error {
 }
 
 type Role struct {
-	Id        int64  `json:"id" form:"id" param:"id" xorm:"autoincr index"`
+	Id        int64  `json:"id" form:"id" param:"id"`
+	Rid       string `json:"rid" form:"rid" param:"rid" xorm:"index"`
 	Name      string `json:"name" form:"name" query:"name" xorm:"varchar(64) unique notnull default('')"`
 	CreatedAt int64  `json:"created_at" xorm:"created"`
 	UpdatedAt int64  `json:"updated_at" xorm:"updated"`
 	DeletedAt int64  `json:"deleted_at" xorm:"deleted"`
-
-	Users []User `json:"users" xorm:"-"`
 }
 
 func (Role) TableName() string {
@@ -76,22 +68,17 @@ func (r *Role) Add() (int64, error) {
 
 // Update role
 func (r *Role) Update() (int64, error) {
-	return db.DB.Where("id = ?", r.Id).Update(r)
+	return db.DB.Where("rid = ?", r.Rid).Update(r)
 }
 
 // Delete role
 func (r *Role) Delete() (int64, error) {
-	return db.DB.Where("id = ?", r.Id).Delete(r)
+	return db.DB.Where("rid = ?", r.Rid).Delete(r)
 }
 
 // Get role
 func (r *Role) Get() (bool, error) {
-	return db.DB.Where("id = ?", r.Id).Get(r)
-}
-
-// Get role's all users
-func (r *Role) GetUsers() error {
-	return db.DB.Table("sys_users").Join("INNER", "sys_user_roles", "sys_users.id = sys_user_roles.user_id").Where("sys_user_roles.role_id = ?", r.Id).Find(&r.Users)
+	return db.DB.Where("rid = ?", r.Rid).Get(r)
 }
 
 // Get roles
@@ -99,32 +86,44 @@ func GetRoles(roles *[]Role) error {
 	return db.DB.Find(roles)
 }
 
-type UserRole struct {
-	ID        int64 `json:"id" form:"id" param:"id" xorm:"autoincr index"`
-	UserID    uint  `json:"user_id" form:"user_id" query:"user_id" xorm:"index default 0"`
-	RoleID    uint  `json:"role_id" form:"role_id" query:"role_id" xorm:"index default 0"`
-	CreatedAt int64 `json:"created_at" xorm:"created"`
-	UpdatedAt int64 `json:"updated_at" xorm:"updated"`
-	DeletedAt int64 `json:"deleted_at" xorm:"deleted"`
+// Get roles of user
+func GetRolesOfUser(uid string) (roles []Role, err error) {
+	rid := make([]string, 0)
+	err = db.DB.Table("sys_casbin_rule").Where("p_type = ?", "g").Where("v0 = ?", uid).Cols("v1").Find(&rid)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range rid {
+		role := Role{Rid: v}
+		_, err := role.Get()
+		if err != nil {
+			return nil, err
+		}
+		roles = append(roles, role)
+	}
+
+	return roles, nil
 }
 
-func (UserRole) TableName() string {
-	return "sys_user_roles"
-}
+// Get users of role
+func GetUsersOfRole(rid string) (users []User, err error) {
+	uid := make([]string, 0)
+	err = db.DB.Table("sys_casbin_rule").Where("p_type = ?", "g").Where("v1 = ?", rid).Cols("v0").Find(&uid)
+	if err != nil {
+		return nil, err
+	}
 
-// Add user role
-func (ur *UserRole) Add() (int64, error) {
-	return db.DB.Insert(ur)
-}
+	for _, v := range uid {
+		user := User{Uid: v}
+		_, err := user.Get()
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
 
-// Update user role
-func (ur *UserRole) Update() (int64, error) {
-	return db.DB.Where("id = ?", ur.ID).Update(ur)
-}
-
-// Delete user role
-func (ur *UserRole) Delete() (int64, error) {
-	return db.DB.Where("id = ?", ur.ID).Delete(ur)
+	return users, nil
 }
 
 // type policy struct

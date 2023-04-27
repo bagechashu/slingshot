@@ -11,7 +11,7 @@ import (
 )
 
 type CustomClaims struct {
-	UserId uint `json:"user_id"`
+	UserId uint `json:"uid"`
 	jwt.StandardClaims
 }
 
@@ -62,7 +62,7 @@ func JwtMiddleware() echo.MiddlewareFunc {
 				})
 			}
 
-			c.Set("user_id", claims.UserId)
+			c.Set("uid", claims.UserId)
 			c.Set("response", map[string]interface{}{
 				"success": true,
 			})

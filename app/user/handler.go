@@ -3,9 +3,9 @@ package user
 import (
 	"log"
 	"net/http"
-	"slingshot/db"
 	mw "slingshot/middleware"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -29,10 +29,26 @@ func getUsers(c echo.Context) error {
 func addUser(c echo.Context) error {
 	user := User{}
 	if err := c.Bind(&user); err != nil {
-		return err
+		return c.JSON(http.StatusBadRequest, "Invalid request payload")
 	}
-	log.Printf("user: %v", user)
-	db.DB.InsertOne(&user)
+
+	// Generate short UUID for user id
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Unable to generate user id",
+		})
+	}
+	user.Uid = id.String()[:8]
+
+	// log.Printf("user: %v", user)
+	_, err = user.Add()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Unable to add user",
+		})
+	}
+
 	return c.JSON(http.StatusOK, user)
 }
 
@@ -41,6 +57,19 @@ func delUser(c echo.Context) error {
 	if err := c.Bind(&user); err != nil {
 		return err
 	}
+
+	u, err := user.Get()
+	if err != nil {
+		return err
+	}
+
+	log.Printf("user: %v", u)
+	if !u {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "User not exist",
+		})
+	}
+
 	user.Delete()
 	return c.JSON(http.StatusOK, user)
 }
@@ -61,6 +90,15 @@ func addRole(c echo.Context) error {
 	if err := c.Bind(&role); err != nil {
 		return err
 	}
+	// Generate short UUID for user id
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Unable to generate user id",
+		})
+	}
+	role.Rid = id.String()[:4]
+
 	role.Add()
 	return c.JSON(http.StatusOK, role)
 }
@@ -80,41 +118,69 @@ func delRole(c echo.Context) error {
 // func: Get user's all roles
 // param: id
 // return: roles
-func getUserRoles(c echo.Context) error {
-	user := User{}
-	if err := c.Bind(&user); err != nil {
+func getRolesOfUser(c echo.Context) error {
+	roles, err := GetRolesOfUser(c.Param("uid"))
+	if err != nil {
 		return err
 	}
-	user.GetRoles()
-	return c.JSON(http.StatusOK, user.Roles)
+
+	return c.JSON(http.StatusOK, roles)
 }
 
 // func: Get role's all users
 // param: id
 // return: users
-func getRoleUsers(c echo.Context) error {
-	role := Role{}
-	if err := c.Bind(&role); err != nil {
+func getUsersOfRole(c echo.Context) error {
+	users, err := GetUsersOfRole(c.Param("rid"))
+	if err != nil {
 		return err
 	}
-	role.GetUsers()
-	return c.JSON(http.StatusOK, role.Users)
+
+	return c.JSON(http.StatusOK, users)
 }
 
 // func: add users for role.
 // param: id, users
 // return: role
 func addUsersForRole(c echo.Context) error {
+	requestData := struct {
+		Uids []string `json:"uid"`
+	}{}
+	if err := c.Bind(&requestData); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid request data",
+		})
+	}
 	users := make([]User, 0)
-	if err := c.Bind(&users); err != nil {
-		return err
+	for _, uid := range requestData.Uids {
+		user := User{Uid: uid}
+		if exist, err := user.Get(); err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		} else if !exist {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": "User not exist",
+			})
+		}
+		users = append(users, user)
 	}
-	role := Role{}
-	if err := c.Bind(&role); err != nil {
-		return err
+	// log.Printf("================ users: %v===============\n", users)
+
+	role := Role{Rid: c.Param("rid")}
+	if exist, err := role.Get(); err != nil {
+		return c.JSON(http.StatusBadRequest, err)
+	} else if !exist {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Role not exist",
+		})
 	}
+	// log.Printf("================ role: %v===============\n", role)
+
 	for _, user := range users {
-		mw.Rbac.Enforcer.AddGroupingPolicy(user, role.Name)
+		if result, err := mw.Rbac.Enforcer.AddGroupingPolicy(user.Uid, role.Rid); err != nil || !result {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": "Unable to add users to role",
+			})
+		}
 	}
 	return c.JSON(http.StatusOK, role)
 }
