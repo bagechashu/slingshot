@@ -12,40 +12,41 @@ import (
 	"slingshot/templates"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/liushuochen/gotable"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
-type slingshot struct {
-	Mode        string
-	RuntimeRoot string
-	Server      *echo.Echo
-	Log         *zap.SugaredLogger
-	Validate    *validator.Validate
-}
+// type slingshot struct {
+// 	Mode        string
+// 	RuntimeRoot string
+// 	Server      *echo.Echo
+// 	Log         *zap.SugaredLogger
+// 	Validate    *validator.Validate
+// }
+// var s = &slingshot{}
 
 var E *echo.Echo
-
-var s = &slingshot{}
 
 func setup() {
 	db.InitMysql()
 	mw.InitRbac()
 
-	mw.Rbac.Enforcer.AddPolicy("slingshot", "user", "write")
-	s.Mode = "debug"
 	// e.LoadPolicy()
 	E = echo.New()
-	E.Use(middleware.Logger())
-	E.Use(middleware.Recover())
 
-	// E.Use(mw.CheckPermission())
+	// E.Use(middleware.Logger())
+	E.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "${method} ${uri} ${status} ${latency_human} ${error} \n",
+		Output: os.Stdout,
+	}))
+
+	E.Use(middleware.Recover())
+	// E.Use(mw.CasbinRBACMiddleware())
+
 	E.Renderer = templates.HTMLRender
 }
 
@@ -58,12 +59,12 @@ func Run(cmd *cobra.Command, args []string) {
 	// E.Logger.Fatal(E.Start(fmt.Sprintf(":%d", config.Cfg.Server.Port)))
 
 	// Setup
-	E.Logger.SetLevel(log.INFO)
+	E.Logger.SetLevel(log.DEBUG)
 
 	// Start server
 	go func() {
 		if err := E.Start(":1323"); err != nil && err != http.ErrServerClosed {
-			E.Logger.Fatal("shutting down the server")
+			E.Logger.Fatalf("shutting down the server: %s", err)
 		}
 	}()
 

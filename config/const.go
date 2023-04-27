@@ -15,9 +15,6 @@ g = _, _
 e = some(where (p.eft == allow))
 
 [matchers]
-m = g(r.sub, p.sub) == true \
-    && keyMatch2(r.obj, p.obj) == true \
-    && regexMatch(r.act, p.act) == true \
-    || r.sub == "9"
+m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && regexMatch(r.act, p.act)
 `
 )

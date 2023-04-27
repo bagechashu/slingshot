@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"os"
 	"slingshot/config"
 	"sync"
 
@@ -22,10 +21,13 @@ func InitMysql() {
 		if err != nil {
 			fmt.Println("db init failed: ", err.Error())
 		}
-		// TODO: XORM Debug logging
+
+		// if err := DB.Ping(); err != nil {
+		// 	log.Println("db ping failed: ", err.Error())
+		// }
+
 		DB.ShowSQL(true)
-		DB.SetLogLevel(xormlog.LOG_DEBUG)
-		DB.SetLogger(xormlog.NewSimpleLogger(os.Stdout))
+		DB.Logger().SetLevel(xormlog.LOG_DEBUG)
 	})
 }
 
