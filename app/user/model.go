@@ -1,10 +1,11 @@
 package user
 
 import (
+	"errors"
+	"regexp"
 	"slingshot/db"
 )
 
-// TODO: UserID snowflake
 type User struct {
 	Id        int64  `json:"id" form:"id" param:"id"` // can't add xorm tag, because it's primary key
 	Uid       string `json:"uid" form:"uid" param:"uid" xorm:"index"`
@@ -130,7 +131,22 @@ func GetUsersOfRole(rid string) (users []User, err error) {
 type Policy struct {
 	Role   string `json:"role" form:"role" query:"role"`
 	Path   string `json:"path" form:"path" query:"path"`
-	Method bool   `json:"method" form:"method" query:"method"`
+	Method string `json:"method" form:"method" query:"method"`
+}
+
+// is valid role
+func (p *Policy) IsValidRole() (bool, error) {
+	role := Role{Rid: p.Role}
+	return role.Get()
+}
+
+// is valid method
+func (p *Policy) IsValidMethod() (bool, error) {
+	pattern := regexp.MustCompile("^GET|POST|PUT|PATCH|DELETE$")
+	if !pattern.MatchString(p.Method) {
+		return false, errors.New("invalid Request Method")
+	}
+	return true, nil
 }
 
 // Migrate user

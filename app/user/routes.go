@@ -16,6 +16,7 @@ func InitRoutes(e *echo.Echo) {
 
 	rg := e.Group("/role")
 	rg.POST("/", addRole)
+	rg.POST("/:rid", getRole)
 	rg.GET("/", getRoles)
 	rg.DELETE("/:rid", delRole)
 	rg.POST("/:rid/users", addUsersForRole)

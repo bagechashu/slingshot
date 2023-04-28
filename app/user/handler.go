@@ -74,6 +74,18 @@ func delUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
+// func: get role
+// param: id
+// return: role
+func getRole(c echo.Context) error {
+	role := Role{}
+	if err := c.Bind(&role); err != nil {
+		return err
+	}
+	role.Get()
+	return c.JSON(http.StatusOK, role)
+}
+
 // func: get all roles
 // return: roles
 func getRoles(c echo.Context) error {
@@ -146,14 +158,18 @@ func addUsersForRole(c echo.Context) error {
 	requestData := struct {
 		Uids []string `json:"uid"`
 	}{}
+	// bind request data
 	if err := c.Bind(&requestData); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "Invalid request data",
 		})
 	}
+
+	// check if user exist and has no roles
 	users := make([]User, 0)
 	for _, uid := range requestData.Uids {
 		user := User{Uid: uid}
+		// check if user exist
 		if exist, err := user.Get(); err != nil {
 			return c.JSON(http.StatusBadRequest, err)
 		} else if !exist {
@@ -161,10 +177,18 @@ func addUsersForRole(c echo.Context) error {
 				"error": "User not exist",
 			})
 		}
+		// check if user has roles
+		if roles, err := GetRolesOfUser(uid); err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		} else if len(roles) > 0 {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": "User already has roles",
+			})
+		}
 		users = append(users, user)
 	}
-	// log.Printf("================ users: %v===============\n", users)
 
+	// check if role exist
 	role := Role{Rid: c.Param("rid")}
 	if exist, err := role.Get(); err != nil {
 		return c.JSON(http.StatusBadRequest, err)
@@ -173,10 +197,12 @@ func addUsersForRole(c echo.Context) error {
 			"error": "Role not exist",
 		})
 	}
-	// log.Printf("================ role: %v===============\n", role)
 
+	// add users to role
 	for _, user := range users {
-		if result, err := mw.Rbac.Enforcer.AddGroupingPolicy(user.Uid, role.Rid); err != nil || !result {
+		if result, err := mw.Rbac.Enforcer.AddGroupingPolicy(user.Uid, role.Rid); err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		} else if !result {
 			return c.JSON(http.StatusInternalServerError, map[string]string{
 				"error": "Unable to add users to role",
 			})
@@ -205,6 +231,22 @@ func addPolicyForRole(c echo.Context) error {
 	policy := Policy{}
 	if err := c.Bind(&policy); err != nil {
 		return err
+	}
+
+	if ok, err := policy.IsValidRole(); err != nil {
+		return c.JSON(http.StatusBadRequest, err)
+	} else if !ok {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid role",
+		})
+	}
+
+	if ok, err := policy.IsValidMethod(); err != nil {
+		return c.JSON(http.StatusBadRequest, err)
+	} else if !ok {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid method",
+		})
 	}
 
 	mw.Rbac.Enforcer.AddPolicy(policy.Role, policy.Path, policy.Method)
