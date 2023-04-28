@@ -43,9 +43,7 @@ func addUser(c echo.Context) error {
 	// log.Printf("user: %v", user)
 	_, err = user.Add()
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Unable to add user",
-		})
+		return c.JSON(http.StatusInternalServerError, err)
 	}
 
 	return c.JSON(http.StatusOK, user)

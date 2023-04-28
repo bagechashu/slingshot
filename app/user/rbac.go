@@ -34,7 +34,7 @@ func CasbinRBACMiddleware() echo.MiddlewareFunc {
 			if exist, err := u.Get(); err != nil {
 				return c.HTML(http.StatusInternalServerError, fmt.Sprintf("user get err: %v", err))
 			} else if !exist {
-				return c.HTML(http.StatusUnauthorized, "user not exist")
+				return c.HTML(http.StatusUnauthorized, "rbac user not exist")
 			}
 
 			log.Printf("user: %v", u)
@@ -42,7 +42,7 @@ func CasbinRBACMiddleware() echo.MiddlewareFunc {
 
 			// FIXME: sub can't be empty
 			if len(sub) == 0 {
-				return c.HTML(http.StatusUnauthorized, "user identity not specified")
+				return c.HTML(http.StatusUnauthorized, "user don't have role")
 			}
 
 			obj := c.Request().URL.RequestURI()
