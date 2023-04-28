@@ -22,6 +22,7 @@ type Casbin struct {
 // NewRbac
 var Rbac = new(Casbin)
 
+// TODO: use JWT get user identity
 func CasbinRBACMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -29,6 +30,14 @@ func CasbinRBACMiddleware() echo.MiddlewareFunc {
 			if err := c.Bind(&u); err != nil {
 				log.Printf("user bind in casbin err: %v", err)
 			}
+
+			if exist, err := u.Get(); err != nil {
+				return c.HTML(http.StatusInternalServerError, fmt.Sprintf("user get err: %v", err))
+			} else if !exist {
+				return c.HTML(http.StatusUnauthorized, "user not exist")
+			}
+
+			log.Printf("user: %v", u)
 			sub := u.Rid
 
 			// FIXME: sub can't be empty

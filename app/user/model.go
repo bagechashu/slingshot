@@ -47,11 +47,11 @@ func (u *User) Delete() (int64, error) {
 
 // Get user
 func (u *User) Get() (bool, error) {
-	return db.DB.Where("uid = ?", u.Uid).Get(u)
+	return db.DB.Where("id = ?", u.Id).Get(u)
 }
 
 // Get role of user
-func (u *User) GetRid() (bool, error) {
+func (u *User) GetByRid() (bool, error) {
 	return db.DB.Where("uid = ?", u.Uid).Cols("rid").Get(u)
 }
 
