@@ -153,7 +153,6 @@ func getUsersOfRole(c echo.Context) error {
 // func: add users for role.
 // param: id, users
 // return: role
-// TODO: update User.Rid
 func addUsersForRole(c echo.Context) error {
 	requestData := struct {
 		Uids []string `json:"uid"`
@@ -200,11 +199,13 @@ func addUsersForRole(c echo.Context) error {
 
 	// add users to role
 	for _, user := range users {
+		// update User struct Rid
 		user.Rid = role.Rid
 		if _, err := user.UpdateRid(); err != nil {
 			return c.JSON(http.StatusBadRequest, err)
 		}
 
+		// casbin add group policy
 		if result, err := Rbac.Enforcer.AddGroupingPolicy(user.Uid, role.Rid); err != nil {
 			return c.JSON(http.StatusBadRequest, err)
 		} else if !result {

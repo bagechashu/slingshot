@@ -6,7 +6,6 @@ import (
 	"slingshot/db"
 )
 
-// TODO: User model fix Role field
 type User struct {
 	Id        int64  `json:"id" form:"id" param:"id"` // can't add xorm tag, because it's primary key
 	Uid       string `json:"uid" form:"uid" param:"uid" xorm:"index"`
