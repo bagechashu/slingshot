@@ -1,10 +1,9 @@
-package middleware
+package user
 
 import (
 	"fmt"
 	"log"
 	"net/http"
-	"os/user"
 	"slingshot/config"
 	"sync"
 
@@ -26,15 +25,23 @@ var Rbac = new(Casbin)
 func CasbinRBACMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			var u user.User
+			u := User{}
 			if err := c.Bind(&u); err != nil {
 				log.Printf("user bind in casbin err: %v", err)
 			}
-			sub := u.Username
+			sub := u.Rid
+
+			// FIXME: sub can't be empty
+			if len(sub) == 0 {
+				return c.HTML(http.StatusUnauthorized, "user identity not specified")
+			}
 
 			obj := c.Request().URL.RequestURI()
 			act := c.Request().Method
 
+			log.Printf("sub: %v, obj: %v, act: %v", sub, obj, act)
+
+			// FIXME: can obs use regex?
 			if ok, _ := Rbac.Enforcer.Enforce(sub, obj, act); !ok {
 				return c.HTML(http.StatusForbidden, "no permission")
 			}

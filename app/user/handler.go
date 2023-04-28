@@ -3,7 +3,6 @@ package user
 import (
 	"log"
 	"net/http"
-	mw "slingshot/middleware"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -154,6 +153,7 @@ func getUsersOfRole(c echo.Context) error {
 // func: add users for role.
 // param: id, users
 // return: role
+// TODO: update User.Rid
 func addUsersForRole(c echo.Context) error {
 	requestData := struct {
 		Uids []string `json:"uid"`
@@ -200,7 +200,12 @@ func addUsersForRole(c echo.Context) error {
 
 	// add users to role
 	for _, user := range users {
-		if result, err := mw.Rbac.Enforcer.AddGroupingPolicy(user.Uid, role.Rid); err != nil {
+		user.Rid = role.Rid
+		if _, err := user.UpdateRid(); err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+
+		if result, err := Rbac.Enforcer.AddGroupingPolicy(user.Uid, role.Rid); err != nil {
 			return c.JSON(http.StatusBadRequest, err)
 		} else if !result {
 			return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -220,7 +225,7 @@ func getRolePolicy(c echo.Context) error {
 		return err
 	}
 	role.Get()
-	policy := mw.Rbac.Enforcer.GetFilteredPolicy(0, role.Name)
+	policy := Rbac.Enforcer.GetFilteredPolicy(0, role.Name)
 	return c.JSON(http.StatusOK, policy)
 }
 
@@ -249,14 +254,14 @@ func addPolicyForRole(c echo.Context) error {
 		})
 	}
 
-	mw.Rbac.Enforcer.AddPolicy(policy.Role, policy.Path, policy.Method)
+	Rbac.Enforcer.AddPolicy(policy.Role, policy.Path, policy.Method)
 	return c.JSON(http.StatusOK, policy)
 }
 
 // func: Get all policy.
 // return: policy
 func getPolicys(c echo.Context) error {
-	policys := mw.Rbac.Enforcer.GetPolicy()
+	policys := Rbac.Enforcer.GetPolicy()
 	return c.JSON(http.StatusOK, policys)
 }
 
@@ -269,6 +274,6 @@ func delPolicyForRole(c echo.Context) error {
 		return err
 	}
 
-	mw.Rbac.Enforcer.RemovePolicy(policy.Role, policy.Path, policy.Method)
+	Rbac.Enforcer.RemovePolicy(policy.Role, policy.Path, policy.Method)
 	return c.JSON(http.StatusOK, policy)
 }

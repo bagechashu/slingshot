@@ -6,9 +6,11 @@ import (
 	"slingshot/db"
 )
 
+// TODO: User model fix Role field
 type User struct {
 	Id        int64  `json:"id" form:"id" param:"id"` // can't add xorm tag, because it's primary key
 	Uid       string `json:"uid" form:"uid" param:"uid" xorm:"index"`
+	Rid       string `json:"rid" form:"rid" xorm:"index default('')"`
 	Username  string `json:"username" form:"username" xorm:"varchar(64) unique notnull default('') index 'username'"`
 	Nickname  string `json:"nickname" form:"nickname" xorm:"varchar(64) index default('')"`
 	Password  string `json:"password" form:"password" xorm:"varchar(40) default('')"`
@@ -34,6 +36,11 @@ func (u *User) Update() (int64, error) {
 	return db.DB.Where("uid = ?", u.Uid).Update(u)
 }
 
+// Update user Rid
+func (u *User) UpdateRid() (int64, error) {
+	return db.DB.Where("uid = ?", u.Uid).Cols("rid").Update(u)
+}
+
 // Delete user
 func (u *User) Delete() (int64, error) {
 	return db.DB.Where("uid = ?", u.Uid).Delete(u)
@@ -42,6 +49,11 @@ func (u *User) Delete() (int64, error) {
 // Get user
 func (u *User) Get() (bool, error) {
 	return db.DB.Where("uid = ?", u.Uid).Get(u)
+}
+
+// Get role of user
+func (u *User) GetRid() (bool, error) {
+	return db.DB.Where("uid = ?", u.Uid).Cols("rid").Get(u)
 }
 
 // Get users
@@ -87,6 +99,7 @@ func GetRoles(roles *[]Role) error {
 	return db.DB.Find(roles)
 }
 
+// TODO: use User and Role model to replace this
 // Get roles of user
 func GetRolesOfUser(uid string) (roles []Role, err error) {
 	rid := make([]string, 0)
@@ -107,6 +120,7 @@ func GetRolesOfUser(uid string) (roles []Role, err error) {
 	return roles, nil
 }
 
+// TODO: use User and Role model to replace this
 // Get users of role
 func GetUsersOfRole(rid string) (users []User, err error) {
 	uid := make([]string, 0)

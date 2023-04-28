@@ -7,8 +7,8 @@ import (
 	"os"
 	"os/signal"
 	"slingshot/app"
+	"slingshot/app/user"
 	"slingshot/db"
-	mw "slingshot/middleware"
 	"slingshot/templates"
 	"time"
 
@@ -33,7 +33,7 @@ var E *echo.Echo
 
 func setup() {
 	db.InitMysql()
-	mw.InitRbac()
+	user.InitRbac()
 
 	// e.LoadPolicy()
 	E = echo.New()
@@ -45,7 +45,7 @@ func setup() {
 	}))
 
 	E.Use(middleware.Recover())
-	// E.Use(mw.CasbinRBACMiddleware())
+	E.Use(user.CasbinRBACMiddleware())
 
 	E.Renderer = templates.HTMLRender
 }
