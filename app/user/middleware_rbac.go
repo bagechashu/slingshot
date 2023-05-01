@@ -26,15 +26,24 @@ var Rbac = new(Casbin)
 func CasbinRBACMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			err := next(c)
+
+			// skip casbin middleware
+			if c.Get("skip_casbin") != nil {
+				return err
+			}
+
+			log.Printf("==========casbin middleware==========\n")
+
 			u := User{}
 			if err := c.Bind(&u); err != nil {
 				log.Printf("user bind in casbin err: %v", err)
 			}
 
-			if exist, err := u.Get(); err != nil {
+			if exist, err := u.GetByUid(); err != nil {
 				return c.HTML(http.StatusInternalServerError, fmt.Sprintf("user get err: %v", err))
 			} else if !exist {
-				return c.HTML(http.StatusUnauthorized, "rbac user not exist")
+				return c.HTML(http.StatusUnauthorized, "user not exist")
 			}
 
 			log.Printf("user: %v", u)
@@ -50,11 +59,11 @@ func CasbinRBACMiddleware() echo.MiddlewareFunc {
 
 			log.Printf("sub: %v, obj: %v, act: %v", sub, obj, act)
 
-			// FIXME: can obs use regex?
+			// FIXME: can obj use regex?
 			if ok, _ := Rbac.Enforcer.Enforce(sub, obj, act); !ok {
 				return c.HTML(http.StatusForbidden, "no permission")
 			}
-			return next(c)
+			return err
 		}
 	}
 }

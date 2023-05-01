@@ -11,13 +11,20 @@ import (
 )
 
 type CustomClaims struct {
-	UserId uint `json:"uid"`
+	Uid string `json:"uid"`
 	jwt.StandardClaims
 }
 
 func JwtMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			err := next(c)
+
+			// skip jwt middleware
+			if c.Get("skip_jwt") != nil {
+				return err
+			}
+
 			tokenString := c.Request().Header.Get("Authorization")
 
 			if tokenString == "" {
@@ -62,22 +69,23 @@ func JwtMiddleware() echo.MiddlewareFunc {
 				})
 			}
 
-			c.Set("uid", claims.UserId)
+			c.Set("uid", claims.Uid)
 			c.Set("response", map[string]interface{}{
 				"success": true,
 			})
 
-			return next(c)
+			return err
 		}
 	}
 }
 
-func CreateToken(userId uint) (string, error) {
+func CreateToken(uid string, td time.Duration) (string, error) {
 	claims := &CustomClaims{
-		UserId: userId,
+		Uid: uid,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
-			Issuer:    "Slingshot",
+			ExpiresAt: time.Now().Add(td).Unix(),
+			// TODO: Issuer learn and set
+			Issuer: "Slingshot",
 		},
 	}
 
@@ -85,7 +93,7 @@ func CreateToken(userId uint) (string, error) {
 	return token.SignedString([]byte(config.Cfg.Server.JwtSecretKey))
 }
 
-// userRole, err := e.GetRoleForUser(strconv.Itoa(int(claims.UserId)))
+// userRole, err := e.GetRoleForUser(strconv.Itoa(int(claims.Uid)))
 // if err != nil {
 // 	return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 // 		"success": false,

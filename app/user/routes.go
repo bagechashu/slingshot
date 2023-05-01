@@ -7,7 +7,8 @@ import (
 // TODO: JWT auth
 func InitRoutes(e *echo.Echo) {
 	ug := e.Group("/user")
-
+	ug.POST("/login", login)
+	ug.POST("/register", register)
 	ug.POST("/", addUser)
 	ug.GET("/:uid", getUser)
 	ug.GET("/", getUsers)

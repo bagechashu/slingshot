@@ -1,6 +1,7 @@
 server: 
   port: 8081
   jwtsecretkey: slingshot_jwt_secret_key
+  jwtexpires: 24
   
 database: 
   user: root

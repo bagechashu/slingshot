@@ -3,17 +3,89 @@ package user
 import (
 	"log"
 	"net/http"
+	"slingshot/config"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
+
+// func login with jwt
+func login(c echo.Context) error {
+	// skip casbin and jwt middleware
+	c.Set("skip_casbin", true)
+	c.Set("skip_jwt", true)
+
+	req := LoginRequest{}
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+
+	user := User{Username: req.Username}
+	if exist, err := user.GetByUsername(); err != nil {
+		return c.JSON(http.StatusInternalServerError, err)
+	} else if !exist {
+		return c.JSON(http.StatusUnauthorized, "2username or password error")
+	}
+
+	if ok := user.checkUserPassword(req.Password); !ok {
+		return c.JSON(http.StatusUnauthorized, "username or password error")
+	}
+
+	// return jwt token
+	token, err := CreateToken(user.Uid, time.Hour*time.Duration(config.Cfg.Server.JwtExpiresHour))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err)
+	}
+	log.Print("==================Login function===================")
+	return c.JSON(http.StatusOK, map[string]string{
+		"token": token,
+	})
+}
+
+func register(c echo.Context) error {
+	// skip casbin and jwt middleware
+	c.Set("skip_casbin", true)
+	c.Set("skip_jwt", true)
+
+	req := RegisterRequest{}
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+
+	if exist, err := checkUserEmailExists(req.Email); err != nil {
+		return c.JSON(http.StatusInternalServerError, err)
+	} else if exist {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Email already exists",
+		})
+	}
+
+	user := User{Username: req.Username, Email: req.Email}
+	user.setUserPassword(req.Password)
+
+	// Generate short UUID for user id
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Unable to generate user id",
+		})
+	}
+	user.Uid = id.String()[:8]
+
+	if _, err := user.Add(); err != nil {
+		return c.JSON(http.StatusInternalServerError, err)
+	}
+
+	return c.JSON(http.StatusOK, user)
+}
 
 func getUser(c echo.Context) error {
 	user := User{}
 	if err := c.Bind(&user); err != nil {
 		return err
 	}
-	user.Get()
+	user.GetByUsername()
 	return c.JSON(http.StatusOK, user)
 }
 
@@ -55,7 +127,7 @@ func delUser(c echo.Context) error {
 		return err
 	}
 
-	u, err := user.Get()
+	u, err := user.GetByUid()
 	if err != nil {
 		return err
 	}
@@ -167,7 +239,7 @@ func addUsersForRole(c echo.Context) error {
 	for _, uid := range requestData.Uids {
 		user := User{Uid: uid}
 		// check if user exist
-		if exist, err := user.Get(); err != nil {
+		if exist, err := user.GetByUid(); err != nil {
 			return c.JSON(http.StatusBadRequest, err)
 		} else if !exist {
 			return c.JSON(http.StatusBadRequest, map[string]string{
