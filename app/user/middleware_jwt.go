@@ -1,29 +1,30 @@
 package user
 
 import (
+	"log"
 	"net/http"
 	"slingshot/config"
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 	echo "github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type CustomClaims struct {
 	Uid string `json:"uid"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
-func JwtMiddleware() echo.MiddlewareFunc {
+func JwtMiddleware(skipper middleware.Skipper) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			err := next(c)
-
-			// skip jwt middleware
-			if c.Get("skip_jwt") != nil {
-				return err
+			if skipper(c) {
+				return next(c)
 			}
+
+			log.Printf("==========jwt middleware==========\n")
 
 			tokenString := c.Request().Header.Get("Authorization")
 
@@ -74,44 +75,28 @@ func JwtMiddleware() echo.MiddlewareFunc {
 				"success": true,
 			})
 
-			return err
+			return next(c)
 		}
 	}
 }
 
-func CreateToken(uid string, td time.Duration) (string, error) {
+func CreateToken(uid string, timeduration string) (string, error) {
+	t, err := time.ParseDuration(timeduration)
+	if err != nil {
+		return "", err
+	}
+
+	expiresAt := jwt.NumericDate{Time: time.Now().Add(t)}
+
 	claims := &CustomClaims{
 		Uid: uid,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(td).Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: &expiresAt,
 			// TODO: Issuer learn and set
-			Issuer: "Slingshot",
+			Issuer: config.Cfg.Server.JwtIssuer,
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(config.Cfg.Server.JwtSecretKey))
 }
-
-// userRole, err := e.GetRoleForUser(strconv.Itoa(int(claims.Uid)))
-// if err != nil {
-// 	return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-// 		"success": false,
-// 		"message": err.Error(),
-// 	})
-// }
-// obj := c.Request().URL.Path
-// act := c.Request().Method
-// allowed, err := e.Enforce(userRole, obj, act)
-// if err != nil {
-// 	return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-// 		"success": false,
-// 		"message": err.Error(),
-// 	})
-// }
-// if !allowed {
-// 	return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-// 		"success": false,
-// 		"message": "Unauthorized access attempt",
-// 	})
-// }

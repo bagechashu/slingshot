@@ -11,6 +11,26 @@ import (
 	"github.com/casbin/casbin/v2/model"
 	xormadapter "github.com/casbin/xorm-adapter/v2"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+)
+
+const (
+	RBAC_MODEL = `
+[request_definition]
+r = sub, obj, act
+
+[policy_definition]
+p = sub, obj, act
+
+[role_definition]
+g = _, _
+
+[policy_effect]
+e = some(where (p.eft == allow))
+
+[matchers]
+m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && regexMatch(r.act, p.act)
+`
 )
 
 type Casbin struct {
@@ -23,22 +43,16 @@ type Casbin struct {
 var Rbac = new(Casbin)
 
 // TODO: use JWT get user identity
-func CasbinRBACMiddleware() echo.MiddlewareFunc {
+func CasbinRBACMiddleware(skipper middleware.Skipper) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			err := next(c)
-
-			// skip casbin middleware
-			if c.Get("skip_casbin") != nil {
-				return err
+			if skipper(c) {
+				return next(c)
 			}
 
 			log.Printf("==========casbin middleware==========\n")
 
-			u := User{}
-			if err := c.Bind(&u); err != nil {
-				log.Printf("user bind in casbin err: %v", err)
-			}
+			u := User{Uid: c.Get("uid").(string)}
 
 			if exist, err := u.GetByUid(); err != nil {
 				return c.HTML(http.StatusInternalServerError, fmt.Sprintf("user get err: %v", err))
@@ -63,7 +77,7 @@ func CasbinRBACMiddleware() echo.MiddlewareFunc {
 			if ok, _ := Rbac.Enforcer.Enforce(sub, obj, act); !ok {
 				return c.HTML(http.StatusForbidden, "no permission")
 			}
-			return err
+			return next(c)
 		}
 	}
 }
@@ -81,7 +95,7 @@ func InitRbac() {
 			fmt.Printf("adapter err: %v", err)
 		}
 
-		casbinModel, err := model.NewModelFromString(config.RBAC_MODEL)
+		casbinModel, err := model.NewModelFromString(RBAC_MODEL)
 		if err != nil {
 			fmt.Printf("model err: %v", err)
 		}
@@ -92,4 +106,11 @@ func InitRbac() {
 			fmt.Printf("Enforcer err: %v", err)
 		}
 	})
+
+	LoadPolicy()
+}
+
+// load policy from database
+func LoadPolicy() {
+	Rbac.Enforcer.LoadPolicy()
 }

@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"slingshot/config"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -12,10 +11,6 @@ import (
 
 // func login with jwt
 func login(c echo.Context) error {
-	// skip casbin and jwt middleware
-	c.Set("skip_casbin", true)
-	c.Set("skip_jwt", true)
-
 	req := LoginRequest{}
 	if err := c.Bind(&req); err != nil {
 		return err
@@ -25,7 +20,7 @@ func login(c echo.Context) error {
 	if exist, err := user.GetByUsername(); err != nil {
 		return c.JSON(http.StatusInternalServerError, err)
 	} else if !exist {
-		return c.JSON(http.StatusUnauthorized, "2username or password error")
+		return c.JSON(http.StatusUnauthorized, "username or password error")
 	}
 
 	if ok := user.checkUserPassword(req.Password); !ok {
@@ -33,21 +28,17 @@ func login(c echo.Context) error {
 	}
 
 	// return jwt token
-	token, err := CreateToken(user.Uid, time.Hour*time.Duration(config.Cfg.Server.JwtExpiresHour))
+	token, err := CreateToken(user.Uid, config.Cfg.Server.JwtExpiresHour)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err)
 	}
-	log.Print("==================Login function===================")
+
 	return c.JSON(http.StatusOK, map[string]string{
 		"token": token,
 	})
 }
 
 func register(c echo.Context) error {
-	// skip casbin and jwt middleware
-	c.Set("skip_casbin", true)
-	c.Set("skip_jwt", true)
-
 	req := RegisterRequest{}
 	if err := c.Bind(&req); err != nil {
 		return err
@@ -85,7 +76,7 @@ func getUser(c echo.Context) error {
 	if err := c.Bind(&user); err != nil {
 		return err
 	}
-	user.GetByUsername()
+	user.GetByUid()
 	return c.JSON(http.StatusOK, user)
 }
 
@@ -326,6 +317,10 @@ func addPolicyForRole(c echo.Context) error {
 	}
 
 	Rbac.Enforcer.AddPolicy(policy.Role, policy.Path, policy.Method)
+
+	// update policy
+	LoadPolicy()
+
 	return c.JSON(http.StatusOK, policy)
 }
 
@@ -346,5 +341,9 @@ func delPolicyForRole(c echo.Context) error {
 	}
 
 	Rbac.Enforcer.RemovePolicy(policy.Role, policy.Path, policy.Method)
+
+	// update policy
+	LoadPolicy()
+
 	return c.JSON(http.StatusOK, policy)
 }

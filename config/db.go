@@ -5,12 +5,12 @@ import (
 )
 
 type Database struct {
-	User     string
-	Password string
-	Host     string
-	Port     int
-	Name     string
-	Param    string
+	User     string `validate:"required"`
+	Password string `validate:"required"`
+	Host     string `validate:"required"`
+	Port     int    `validate:"required"`
+	Name     string `validate:"required"`
+	Param    string `validate:"required"`
 }
 
 func (db Database) DSN() string {

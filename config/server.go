@@ -4,10 +4,11 @@ import "time"
 
 type Server struct {
 	Host           string
-	Port           int
+	Port           int `validate:"required"`
 	ReadTimeout    time.Duration
 	WriteTimeout   time.Duration
 	IdleTimeout    time.Duration
-	JwtSecretKey   string
-	JwtExpiresHour int
+	JwtIssuer      string `validate:"required"`
+	JwtSecretKey   string `validate:"required"`
+	JwtExpiresHour string `validate:"required"`
 }

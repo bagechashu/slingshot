@@ -35,7 +35,6 @@ func setup() {
 	db.InitMysql()
 	user.InitRbac()
 
-	// e.LoadPolicy()
 	E = echo.New()
 
 	// E.Use(middleware.Logger())
@@ -45,7 +44,10 @@ func setup() {
 	}))
 
 	E.Use(middleware.Recover())
-	E.Use(user.CasbinRBACMiddleware())
+
+	// middleware before router
+	E.Use(user.JwtMiddleware(user.SkipLoginAndRegister))
+	E.Use(user.CasbinRBACMiddleware(user.SkipLoginAndRegister))
 
 	E.Renderer = templates.HTMLRender
 }
