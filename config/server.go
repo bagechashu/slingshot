@@ -10,5 +10,5 @@ type Server struct {
 	IdleTimeout    time.Duration
 	JwtIssuer      string `validate:"required"`
 	JwtSecretKey   string `validate:"required"`
-	JwtExpiresHour string `validate:"required"`
+	JwtExpiresHour int    `validate:"required lte=24"`
 }
