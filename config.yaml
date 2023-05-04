@@ -2,7 +2,7 @@ server:
   port: 8081
   jwtissuer: slingshot
   jwtsecretkey: slingshot_jwt_secret_key
-  jwtexpireshour: 24h
+  jwtexpireshour: 24
   
 database: 
   user: root
