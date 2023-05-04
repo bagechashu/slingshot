@@ -4,14 +4,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func SkipLoginAndRegister(c echo.Context) bool {
-	path := c.Path()
-	if path == "/user/login" || path == "/user/register" {
-		return true
-	}
-	return false
-}
-
 // TODO: JWT auth
 func InitRoutes(e *echo.Echo) {
 	ug := e.Group("/user")

@@ -213,6 +213,15 @@ func (p *Policy) IsValidMethod() (bool, error) {
 	return true, nil
 }
 
+// func get path from casbin policy
+func GetPathNoLimit() (paths []string, err error) {
+	err = db.DB.Table("sys_casbin_rule").Where("p_type=? and v0=?", "p", "*").Cols("v1").Find(&paths)
+	if err != nil {
+		return nil, err
+	}
+	return paths, nil
+}
+
 // Migrate user
 func Migrate() {
 	db.DB.Sync2(&User{})

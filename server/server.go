@@ -46,8 +46,7 @@ func setup() {
 	E.Use(middleware.Recover())
 
 	// middleware before router
-	E.Use(user.JwtMiddleware(user.SkipLoginAndRegister))
-	E.Use(user.CasbinRBACMiddleware(user.SkipLoginAndRegister))
+	E.Use(user.UserAuthMiddleware(user.SkipPathNoLimit))
 
 	E.Renderer = templates.HTMLRender
 }

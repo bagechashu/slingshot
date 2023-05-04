@@ -30,7 +30,7 @@ func login(c echo.Context) error {
 
 	// return jwt token
 	td := fmt.Sprintf("%d%s", config.Cfg.Server.JwtExpiresHour, "h")
-	token, err := CreateToken(user.Uid, td)
+	token, err := CreateJwtToken(user.Uid, td)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err)
 	}

@@ -11,7 +11,6 @@ import (
 	"github.com/casbin/casbin/v2/model"
 	xormadapter "github.com/casbin/xorm-adapter/v2"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 const (
@@ -42,44 +41,33 @@ type Casbin struct {
 // NewRbac
 var Rbac = new(Casbin)
 
-// TODO: use JWT get user identity
-func CasbinRBACMiddleware(skipper middleware.Skipper) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			if skipper(c) {
-				return next(c)
-			}
+func RbacVarifiy(c echo.Context) error {
+	u := User{Uid: c.Get("uid").(string)}
 
-			log.Printf("==========casbin middleware==========\n")
-
-			u := User{Uid: c.Get("uid").(string)}
-
-			if exist, err := u.GetByUid(); err != nil {
-				return c.HTML(http.StatusInternalServerError, fmt.Sprintf("user get err: %v", err))
-			} else if !exist {
-				return c.HTML(http.StatusUnauthorized, "user not exist")
-			}
-
-			log.Printf("user: %v", u)
-			sub := u.Rid
-
-			// FIXME: sub can't be empty
-			if len(sub) == 0 {
-				return c.HTML(http.StatusUnauthorized, "user don't have role")
-			}
-
-			obj := c.Request().URL.RequestURI()
-			act := c.Request().Method
-
-			log.Printf("sub: %v, obj: %v, act: %v", sub, obj, act)
-
-			// FIXME: can obj use regex?
-			if ok, _ := Rbac.Enforcer.Enforce(sub, obj, act); !ok {
-				return c.HTML(http.StatusForbidden, "no permission")
-			}
-			return next(c)
-		}
+	if exist, err := u.GetByUid(); err != nil {
+		return c.HTML(http.StatusInternalServerError, fmt.Sprintf("user get err: %v", err))
+	} else if !exist {
+		return c.HTML(http.StatusUnauthorized, "user not exist")
 	}
+
+	log.Printf("user: %v", u)
+	sub := u.Rid
+
+	// FIXME: sub can't be empty
+	if len(sub) == 0 {
+		return c.HTML(http.StatusUnauthorized, "user don't have role")
+	}
+
+	obj := c.Request().URL.RequestURI()
+	act := c.Request().Method
+
+	log.Printf("sub: %v, obj: %v, act: %v", sub, obj, act)
+
+	// FIXME: can obj use regex?
+	if ok, _ := Rbac.Enforcer.Enforce(sub, obj, act); !ok {
+		return c.HTML(http.StatusForbidden, "no permission")
+	}
+	return nil
 }
 
 func InitRbac() {
