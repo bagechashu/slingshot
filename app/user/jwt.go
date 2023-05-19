@@ -79,8 +79,7 @@ func CreateJwtToken(uid string, timeduration string) (string, error) {
 		Uid: uid,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: &expiresAt,
-			// TODO: Issuer learn and set
-			Issuer: config.Cfg.Server.JwtIssuer,
+			Issuer:    config.Cfg.Server.JwtIssuer,
 		},
 	}
 

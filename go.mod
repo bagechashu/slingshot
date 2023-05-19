@@ -21,6 +21,7 @@ require (
 
 require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
+	github.com/flosch/pongo2/v6 v6.0.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/goccy/go-json v0.8.1 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect

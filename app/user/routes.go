@@ -4,7 +4,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// TODO: JWT auth
 func InitRoutes(e *echo.Echo) {
 	ug := e.Group("/user")
 	ug.POST("/login", login)

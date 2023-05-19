@@ -7,5 +7,5 @@ import (
 )
 
 func index(c echo.Context) error {
-	return c.Render(http.StatusOK, "index", "nil")
+	return c.Render(http.StatusOK, "index/index", "nil")
 }
