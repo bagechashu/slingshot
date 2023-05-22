@@ -1,5 +1,6 @@
 server: 
   port: 8081
+  debug: true
   jwtissuer: slingshot
   jwtsecretkey: slingshot_jwt_secret_key
   jwtexpireshour: 24

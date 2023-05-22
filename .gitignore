@@ -1,3 +1,16 @@
+# Ignore editor specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore system and temporary files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.log
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -14,15 +27,26 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-# idea config
-.idea/
-
-# System file
-.DS_store
-
 # air tmpl files
 /tmp
 
 # templates tmp
 templates/assets
-# templates/templates
+
+# Ignore node_modules directory
+node_modules
+
+# Ignore build output directory
+/dist
+
+# Ignore development server logs
+/webpack-dev-server.log
+
+# Ignore environment specific files
+.env
+.env.local
+.env.*.local
+
+# Ignore dependency lock files
+package-lock.json
+yarn.lock

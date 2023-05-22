@@ -1,3 +1,3 @@
-package pkg
+package server
 
 // TODO: global logger

@@ -5,6 +5,7 @@ import "time"
 type Server struct {
 	Host           string
 	Port           int `validate:"required"`
+	Debug          bool
 	ReadTimeout    time.Duration
 	WriteTimeout   time.Duration
 	IdleTimeout    time.Duration

@@ -44,9 +44,7 @@ func setup() {
 	}))
 
 	E.Use(middleware.Recover())
-
-	// middleware before router
-	E.Use(user.UserAuthMiddleware(user.SkipPathNoLimit))
+	// TODO: csrf middleware
 
 	E.Renderer = templates.HTMLRender
 }

@@ -7,5 +7,8 @@ import (
 )
 
 func index(c echo.Context) error {
-	return c.Render(http.StatusOK, "index/index", "nil")
+	d := map[string]interface{}{
+		"title": "Hello, World!",
+	}
+	return c.Render(http.StatusOK, "index/index.html", d)
 }
